@@ -100,6 +100,13 @@ if ($filename -ne $null){
     $report | Out-File $PSScriptRoot\report.html
     
 }
+
+
+(Get-Content $PSScriptRoot\report.html) | ForEach-Object{
+    $_ -replace "<td>Error</td>","<td><font color=red>Error</font></td>"
+} | Out-File $PSScriptRoot\report.html
+
+
 $endTime = (Get-Date)
 $ElapsedTime = $endTime-$startTime
 'Duration: {0:mm} min {0:ss} sec' -f $ElapsedTime

@@ -1,4 +1,5 @@
 Double click event_log.bat to execute the script
+[20221013a] add Error(eng) font color
 
 [20221013] add Hyperlinks
 
