@@ -1,0 +1,1 @@
+Double click event_log.bat to execute the script
