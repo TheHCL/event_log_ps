@@ -51,18 +51,56 @@ $filename = Sel_File
 #$_.Id -eq '1' -or 
 
 if ($filename -ne $null){
+    $startTime = (Get-Date)
+    
+
     $basename = ($filename.Split("\"))[-1]
     $report_title = "<h1>Report Source: $basename</h1>"
-    $bsod = Get-WinEvent -Path $filename | Where-Object {$_.Id -eq '1001'} | ConvertTo-Html -Property TimeCreated,Id,Message -PreContent "<h2>BSOD<h2>"
-    $whea = Get-WinEvent -Path $filename | Where-Object {$_.Id -eq '17'-and $_.ProviderName -eq 'Microsoft-Windows-WHEA-Logger'} | ConvertTo-Html -Property TimeCreated,Id,Message -PreContent "<h2>WHEA<h2>"
-    $tdr = Get-WinEvent -Path $filename | Where-Object {$_.Id -eq '4101'} | ConvertTo-Html -Property TimeCreated,Id,Message -PreContent "<h2>TDR<h2>"
-    $unexpected = Get-WinEvent -Path $filename | Where-Object {$_.Id -eq '6008'} | ConvertTo-Html -Property TimeCreated,Id,Message -PreContent "<h2>Unexpected Shutdown<h2>"
+    $bsod_ev = Get-WinEvent -Path $filename | Where-Object {$_.Id -eq '1001' -and $_.LogName -eq 'System'}
+    $whea_ev = Get-WinEvent -Path $filename | Where-Object {$_.Id -eq '17'-and $_.ProviderName -eq 'Microsoft-Windows-WHEA-Logger' -and $_.LogName -eq 'System'}
+    $tdr_ev = Get-WinEvent -Path $filename | Where-Object {$_.Id -eq '4101' -and $_.LogName -eq 'System'}
+    $unexpected_ev = Get-WinEvent -Path $filename | Where-Object {$_.Id -eq '6008' -and $_.LogName -eq 'System' }
+    $app_ev = Get-WinEvent -Path $filename | Where-Object {$_.Id -eq '1002' -and $_.LogName -eq 'Application'}
 
-    $tmp = (Get-WinEvent -Path $filename | Where-Object {$_.Id -eq '4101'-or ($_.Id -eq '17'-and $_.ProviderName -eq 'Microsoft-Windows-WHEA-Logger') -or $_.Id -eq '1001' -or $_.Id -eq '6008'} | Sort-Object -Property TimeCreated) | ConvertTo-Html -Property TimeCreated,Id,Message -PreContent "<h2>All Errors</h2>"
-    $report = ConvertTo-Html -Body "$report_title $bsod $whea $tdr $unexpected $tmp" -Head $header
+    #count 
+    $bsod_c = $bsod_ev.Count
+    $whea_c = $whea_ev.Count
+    $tdr_c =  $tdr_ev.Count
+    $unexpected_c=$unexpected_ev.Count
+    $app_c = $app_ev.Count
+    
+    $summary = "<h2>Summary</h2>
+                <h2>
+                <table>
+                <tbody>
+                <tr>
+                <th>Event Type</th>
+                <th>Count</th>
+                </tr>
+                <tr><td>BSOD</td><td>$bsod_c</td></tr>
+                <tr><td>WHEA</td><td>$whea_c</td></tr>
+                <tr><td>TDR</td><td>$tdr_c</td></tr>
+                <tr><td>Unexpected Shutdown</td><td>$unexpected_c</td></tr>
+                <tr><td>App Hang</td><td>$app_c</td></tr>
+                </tbody>
+                </table>
+                </h2>
+    "
+
+    $bsod = $bsod_ev | ConvertTo-Html -Property TimeCreated,Id,LevelDisplayName,Message -PreContent "<h2>BSOD:$bsod_c times<h2>"
+    $whea = $whea_ev | ConvertTo-Html -Property TimeCreated,Id,LevelDisplayName,Message -PreContent "<h2>WHEA:$whea_c times<h2>"
+    $tdr = $tdr_ev | ConvertTo-Html -Property TimeCreated,Id,LevelDisplayName,Message -PreContent "<h2>TDR:$tdr_c times<h2>"
+    $unexpected = $unexpected_ev | ConvertTo-Html -Property TimeCreated,Id,LevelDisplayName,Message -PreContent "<h2>Unexpected Shutdown:$unexpected_c times<h2>"
+    $app = $app_ev | ConvertTo-Html -Property TimeCreated,Id,LevelDisplayName,Message -PreContent "<h2>App Hang:$app_c times<h2>"
+
+    $all_ev = (Get-WinEvent -Path $filename | Where-Object {(($_.Id -eq '4101'-or ($_.Id -eq '17'-and $_.ProviderName -eq 'Microsoft-Windows-WHEA-Logger') -or $_.Id -eq '1001' -or $_.Id -eq '6008') -and $_.LogName -eq 'System') -or $_.Id -eq '1002'} | Sort-Object -Property TimeCreated) | ConvertTo-Html -Property TimeCreated,Id,LevelDisplayName,Message -PreContent "<h2>All Errors</h2>"
+    $report = ConvertTo-Html -Body "$report_title $summary $bsod $whea $tdr $unexpected $app $all_ev" -Head $header
     $report | Out-File $PSScriptRoot\report.html
     
 }
+$endTime = (Get-Date)
+$ElapsedTime = $endTime-$startTime
+'Duration: {0:mm} min {0:ss} sec' -f $ElapsedTime
 
 Pause
 
