@@ -103,7 +103,8 @@ if ($filename -ne $null){
 
 
 (Get-Content $PSScriptRoot\report.html) | ForEach-Object{
-    $_ -replace "<td>Error</td>","<td><font color=red>Error</font></td>"
+    $_ -replace "<td>Error</td>","<td><font color=red>Error</font></td>" `
+        -replace "<td>錯誤</td>","<td><font color=red>錯誤</font></td>"
 } | Out-File $PSScriptRoot\report.html
 
 
